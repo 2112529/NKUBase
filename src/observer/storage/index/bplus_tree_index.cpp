@@ -76,6 +76,16 @@ RC BplusTreeIndex::open(const char *file_name, const IndexMeta &index_meta, cons
   return RC::SUCCESS;
 }
 
+RC BplusTreeIndex::drop()
+{
+  RC rc = RC::SUCCESS;
+  rc = index_handler_.drop();
+  // if(rc!=RC::SUCCESS){
+  //   return RC::
+  // }
+  return rc;
+}
+
 RC BplusTreeIndex::close()
 {
   if (inited_) {

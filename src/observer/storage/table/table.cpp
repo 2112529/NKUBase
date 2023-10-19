@@ -140,28 +140,26 @@ RC Table::drop(const char *path, const char *name)
   }
   LOG_INFO("Begin to drop table %s", name);
 
-  std::string meta_file = table_meta_file(base_dir_.c_str(),name);
-  if(unlink(meta_file.c_str())!=0){
-    LOG_ERROR("Failed to remove meta file");
-    return RC::INTERNAL;
+  // delete indexes
+  for (Index *index : indexes_) {
+    index->drop();
   }
+
+  // destroy record_handler
+  record_handler_->close();
+  delete record_handler_;
+  record_handler_ = nullptr;
+
+  // destroy bufferpool
 
   std::string data_file = table_data_file(base_dir_.c_str(), name);
-  if(unlink(data_file.c_str())!=0){
-    LOG_ERROR("Failed to remove data file");
-    return RC::INTERNAL;
-  }
+  BufferPoolManager &bpm = BufferPoolManager::instance();
+  rc = bpm.remove_file(data_file.c_str());
 
-
-  // delete indexes
-  const int index_num = table_meta_.index_num();
-  for (int i = 0;i <index_num;i++) {
-    ((BplusTreeIndex*)indexes_[i])->close();
-    const IndexMeta* index_meta = table_meta_.index(i);
-    std::string index_file = table_index_file(base_dir_.c_str(),name,index_meta->name());
-    if(unlink(index_file.c_str())!=0){
-      LOG_ERROR("Failed to remove index,file = %s,errorno = %d",index_file.c_str(),errno);
-    }
+  // remove metadata file
+  int remove_ret = remove(path);
+  if (remove_ret == -1) {
+    LOG_INFO("remove failed");
   }
 
   return rc;

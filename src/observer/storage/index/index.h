@@ -39,6 +39,7 @@ class Index
 public:
   Index() = default;
   virtual ~Index() = default;
+  virtual RC drop() = 0;
 
   const IndexMeta &index_meta() const
   {
