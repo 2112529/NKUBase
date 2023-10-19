@@ -126,6 +126,47 @@ RC Table::create(int32_t table_id,
   return rc;
 }
 
+RC Table::drop(const char *path, const char *name)
+{
+  RC rc = sync();
+  if(rc!=RC::SUCCESS){
+    return rc;
+  }
+
+  // check
+  if (common::is_blank(name)) {
+    LOG_WARN("Name cannot be empty");
+    return RC::INVALID_ARGUMENT;
+  }
+  LOG_INFO("Begin to drop table %s", name);
+
+  std::string meta_file = table_meta_file(base_dir_.c_str(),name);
+  if(unlink(meta_file.c_str())!=0){
+    LOG_ERROR("Failed to remove meta file");
+    return RC::INTERNAL;
+  }
+
+  std::string data_file = table_data_file(base_dir_.c_str(), name);
+  if(unlink(data_file.c_str())!=0){
+    LOG_ERROR("Failed to remove data file");
+    return RC::INTERNAL;
+  }
+
+
+  // delete indexes
+  const int index_num = table_meta_.index_num();
+  for (int i = 0;i <index_num;i++) {
+    ((BplusTreeIndex*)indexes_[i])->close();
+    const IndexMeta* index_meta = table_meta_.index(i);
+    std::string index_file = table_index_file(base_dir_.c_str(),name,index_meta->name());
+    if(unlink(index_file.c_str())!=0){
+      LOG_ERROR("Failed to remove index,file = %s,errorno = %d",index_file.c_str(),errno);
+    }
+  }
+
+  return rc;
+}
+
 RC Table::open(const char *meta_file, const char *base_dir)
 {
   // 加载元数据文件
