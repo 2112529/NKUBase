@@ -189,8 +189,15 @@ RC MvccTrx::update_record(Table * table, Record &record)
   Field begin_field;
   Field end_field;
   trx_fields(table, begin_field, end_field);
-  begin_field.set_int(record, -trx_id_);
-  end_field.set_int(record, trx_kit_.max_trx_id());
+
+  [[maybe_unused]] int32_t end_xid = end_field.get_int(record);
+  /// 在修改之前，第一次获取record时，就已经对record做了对应的检查，并且保证不会有其它的事务来访问这条数据
+  ASSERT(end_xid > 0, "concurrency conflit: other transaction is updating this record. end_xid=%d, current trx id=%d, rid=%s",
+         end_xid, trx_id_, record.rid().to_string().c_str());
+  if (end_xid != trx_kit_.max_trx_id()) {
+    // 当前不是多版本数据中的最新记录，不需要修改
+    return RC::SUCCESS;
+  }
 
   RC rc = table->update_record(record);
   if (rc != RC::SUCCESS) {

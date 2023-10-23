@@ -533,6 +533,7 @@ RC Table::delete_entry_of_indexes(const char *record, const RID &rid, bool error
 }
 RC Table::update_entry_of_indexes(const char *new_record, const char *old_record, const RID &rid)
 {
+  // TODO
   RC rc = RC::SUCCESS;
   for (Index *index : indexes_) {
     // 首先删除旧记录
