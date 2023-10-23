@@ -245,7 +245,26 @@ RC Table::insert_record(Record &record)
   }
   return rc;
 }
-
+RC Table::update_record(Record& record)
+{
+  RC rc = RC::SUCCESS;
+  rc = record_handler_->update_record(record.data(), &record.rid());
+  if (rc != RC::SUCCESS) {
+    LOG_ERROR("Update record failed. table name=%s, rc=%s", table_meta_.name(), strrc(rc));
+    return rc;
+  }
+  
+  rc = insert_entry_of_indexes(record.data(), record.rid());
+  if (rc != RC::SUCCESS) {
+    // 如果插入索引条目失败，你可以考虑回滚更新操作
+    RC rc2 = record_handler_->update_record(record.data(), &record.rid());
+    if (rc2 != RC::SUCCESS) {
+      LOG_ERROR("Failed to rollback record update. table name=%s, rc=%s", table_meta_.name(), strrc(rc2));
+    }
+  }
+  
+  return rc;
+}
 RC Table::visit_record(const RID &rid, bool readonly, std::function<void(Record &)> visitor)
 {
   return record_handler_->visit_record(rid, readonly, visitor);
@@ -512,7 +531,26 @@ RC Table::delete_entry_of_indexes(const char *record, const RID &rid, bool error
   }
   return rc;
 }
-
+RC Table::update_entry_of_indexes(const char *new_record, const char *old_record, const RID &rid)
+{
+  RC rc = RC::SUCCESS;
+  for (Index *index : indexes_) {
+    // 首先删除旧记录
+    rc = index->delete_entry(old_record, &rid);
+    if (rc != RC::SUCCESS && rc != RC::RECORD_INVALID_KEY) {
+      // 处理删除出错的情况
+      return rc;
+    }
+    
+    // 然后插入新记录
+    rc = index->insert_entry(new_record, &rid);
+    if (rc != RC::SUCCESS) {
+      // 处理插入出错的情况
+      return rc;
+    }
+  }
+  return rc;
+}
 Index *Table::find_index(const char *index_name) const
 {
   for (Index *index : indexes_) {

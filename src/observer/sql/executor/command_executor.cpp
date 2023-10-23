@@ -82,7 +82,7 @@ RC CommandExecutor::execute(SQLStageEvent *sql_event)
       LoadDataExecutor executor;
       return executor.execute(sql_event);
     }
-
+    
     case StmtType::EXIT: {
       return RC::SUCCESS;
     }

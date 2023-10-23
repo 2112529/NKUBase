@@ -257,6 +257,30 @@ RC RecordPageHandler::delete_record(const RID *rid)
   }
 }
 
+
+RC RecordPageHandler::update_record(const char *data, const RID *rid)
+{
+  ASSERT(readonly_ == false, "cannot update record in a readonly page");
+
+  if (rid->slot_num >= page_header_->record_capacity) {
+    LOG_ERROR("Invalid slot_num %d, exceed page's record capacity, page_num %d.", rid->slot_num, frame_->page_num());
+    return RC::INVALID_ARGUMENT;
+  }
+
+  Bitmap bitmap(bitmap_, page_header_->record_capacity);
+  if (bitmap.get_bit(rid->slot_num)) {
+    // Slot is not empty, update the record
+    char *record_data = get_record_data(rid->slot_num);
+    memcpy(record_data, data, page_header_->record_real_size);
+    frame_->mark_dirty();
+    return RC::SUCCESS;
+  } else {
+    LOG_DEBUG("Invalid slot_num %d, slot is empty, page_num %d.", rid->slot_num, frame_->page_num());
+    return RC::RECORD_NOT_EXIST;
+  }
+}
+
+
 RC RecordPageHandler::get_record(const RID *rid, Record *rec)
 {
   if (rid->slot_num >= page_header_->record_capacity) {

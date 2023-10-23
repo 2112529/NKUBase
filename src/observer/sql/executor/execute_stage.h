@@ -31,6 +31,6 @@ class ExecuteStage
 {
 public:
 
-  RC handle_request(SQLStageEvent *event);
-  RC handle_request_with_physical_operator(SQLStageEvent *sql_event);
+  RC handle_request(SQLStageEvent *event); // 不带计划
+  RC handle_request_with_physical_operator(SQLStageEvent *sql_event); // 带计划
 };

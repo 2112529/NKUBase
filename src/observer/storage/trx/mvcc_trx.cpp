@@ -184,7 +184,26 @@ RC MvccTrx::delete_record(Table * table, Record &record)
 
   return RC::SUCCESS;
 }
+RC MvccTrx::update_record(Table * table, Record &record)
+{
+  Field begin_field;
+  Field end_field;
+  trx_fields(table, begin_field, end_field);
+  begin_field.set_int(record, -trx_id_);
+  end_field.set_int(record, trx_kit_.max_trx_id());
 
+  RC rc = table->update_record(record);
+  if (rc != RC::SUCCESS) {
+    LOG_WARN("failed to update record into table. rc=%s", strrc(rc));
+    return rc;
+  }
+
+  rc = log_manager_->append_log(CLogType::INSERT, trx_id_, table->table_id(), record.rid(), record.len(), 0/*offset*/, record.data());
+  ASSERT(rc == RC::SUCCESS, "failed to append update record log. trx id=%d, table id=%d, rid=%s, record len=%d, rc=%s",
+      trx_id_, table->table_id(), record.rid().to_string().c_str(), record.len(), strrc(rc));
+  operations_.insert(Operation(Operation::Type::UPDATE, table, record.rid()));
+  return RC::SUCCESS;
+}
 RC MvccTrx::visit_record(Table *table, Record &record, bool readonly)
 {
   Field begin_field;
@@ -306,6 +325,9 @@ RC MvccTrx::commit_with_trx_id(int32_t commit_xid)
         ASSERT(rc == RC::SUCCESS, "failed to get record while committing. rid=%s, rc=%s",
                rid.to_string().c_str(), strrc(rc));
       } break;
+      case Operation::Type::UPDATE: {
+        // TODO update代码
+      } break;
 
       default: {
         ASSERT(false, "unsupported operation. type=%d", static_cast<int>(operation.type()));
@@ -366,7 +388,9 @@ RC MvccTrx::rollback()
         ASSERT(rc == RC::SUCCESS, "failed to get record while committing. rid=%s, rc=%s",
                rid.to_string().c_str(), strrc(rc));
       } break;
-
+      case Operation::Type::UPDATE: {
+        // TODO update代码
+      } break;
       default: {
         ASSERT(false, "unsupported operation. type=%d", static_cast<int>(operation.type()));
       }
