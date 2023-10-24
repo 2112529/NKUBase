@@ -22,7 +22,7 @@ UpdateStmt::UpdateStmt(Table *table, const Value *value, FilterStmt *filter_stmt
     : table_(table), value_(value), filter_stmt_(filter_stmt)
 {}
 
-RC UpdateStmt::create(Db *db, const UpdateSqlNode &update_sql, Stmt *&stmt, FilterStmt *filter_stmt)
+RC UpdateStmt::create(Db *db, const UpdateSqlNode &update_sql, Stmt *&stmt)
 {
   const char *table_name = update_sql.relation_name.c_str();
   if (nullptr == db || nullptr == table_name || nullptr == update_sql.value.data()) {

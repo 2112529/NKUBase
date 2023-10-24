@@ -254,14 +254,14 @@ RC Table::update_record(Record& record)
     return rc;
   }
   
-  rc = insert_entry_of_indexes(record.data(), record.rid());
-  if (rc != RC::SUCCESS) {
-    // 如果插入索引条目失败，你可以考虑回滚更新操作
-    RC rc2 = record_handler_->update_record(record.data(), &record.rid());
-    if (rc2 != RC::SUCCESS) {
-      LOG_ERROR("Failed to rollback record update. table name=%s, rc=%s", table_meta_.name(), strrc(rc2));
-    }
-  }
+  // rc = insert_entry_of_indexes(record.data(), record.rid());
+  // if (rc != RC::SUCCESS) {
+  //   // 如果插入索引条目失败，你可以考虑回滚更新操作
+  //   RC rc2 = record_handler_->update_record(record.data(), &record.rid());
+  //   if (rc2 != RC::SUCCESS) {
+  //     LOG_ERROR("Failed to rollback record update. table name=%s, rc=%s", table_meta_.name(), strrc(rc2));
+  //   }
+  // }
   
   return rc;
 }

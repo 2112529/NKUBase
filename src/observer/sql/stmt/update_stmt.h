@@ -30,7 +30,7 @@ public:
   UpdateStmt(Table *table, const Value *value, FilterStmt *filter_stmt);
   ~UpdateStmt() override;
 public:
-  static RC create(Db *db, const UpdateSqlNode &update_sql, Stmt *&stmt, FilterStmt *filter_stmt);
+  static RC create(Db *db, const UpdateSqlNode &update_sql, Stmt *&stmt);
 
 public:
   Table *table() const
